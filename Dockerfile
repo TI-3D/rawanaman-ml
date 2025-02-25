@@ -2,7 +2,7 @@
 FROM python:3.9-slim
 
 # Set the working directory
-WORKDIR /app
+WORKDIR /rawanaman-ml
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose the Flask app port
-EXPOSE 6000
+EXPOSE 5000
 
 # Define the command to run the Flask app
-CMD ["python", "app.py"]
+CMD ["python", "rwn-flask.py"]

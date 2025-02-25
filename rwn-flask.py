@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 import tensorflow as tf
 import base64
 import numpy as np
@@ -7,6 +7,7 @@ from io import BytesIO
 import logging
 import sys
 import io
+import os
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
@@ -17,6 +18,12 @@ model = tf.keras.models.load_model('rwn-epc100v2.keras')
 
 class_names = ['Bacterial Spot', 'Early Blight', 'Healthy', 'Late Blight', 'Leaf Mold', 'Mosaic Virus', 'Septoria Leaf Spot', 'Spider Mites', 'Target Spot', 'Yellow Leaf Curl Virus']
 class_names_check_leaf = ['leaf', 'notleaf']
+
+UPLOAD_FOLDER = 'storage'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -70,6 +77,39 @@ def predict():
     except Exception as e:
         logging.error("Error occurred: %s", str(e))  # Log the error
         return str(e), 500  # Return error message as string
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
+
+        # Define file save path
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+
+        # Save the file
+        file.save(file_path)
+
+        return jsonify({'message': 'File uploaded successfully', 'file_path': file_path}), 200
+
+    except KeyError as e:
+        logging.error("Missing key: %s", str(e))
+        return jsonify({'error': f'Missing key: {str(e)}'}), 400
+    except Exception as e:
+        logging.error("An error occurred: %s", str(e))
+        return jsonify({'error': f'An error occurred: {str(e)}'}), 500
+    
+@app.route('/images/<filename>', methods=['GET'])
+def get_image(filename):
+    try:
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    except Exception as e:
+        return jsonify({'error': f'Image not found: {str(e)}'}), 404
     
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=6000)
+    app.run(host='0.0.0.0', port=5000)

@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
   flask-app:
     build: .
     ports:
-      - "6000:6000"
+      - "5000:5000"
     environment:
       - FLASK_ENV=development
     volumes:
-      - .:/app
+      - .:/rawanaman-ml
     restart: always
